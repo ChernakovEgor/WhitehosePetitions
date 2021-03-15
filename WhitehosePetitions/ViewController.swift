@@ -11,27 +11,25 @@ class ViewController: UITableViewController {
     
     var petitions = [Petition]()
     var filteredPetitions = [Petition]()
-    var urlString: String {
-        if navigationController?.tabBarItem.tag == 0  {
-        return "https://www.hackingwithswift.com/samples/petitions-1.json"
-        } else {
-            return "https://www.hackingwithswift.com/samples/petitions-2.json"
-        }
-    }
-    
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let urlString = navigationController?.tabBarItem.tag == 0 ? "https://www.hackingwithswift.com/samples/petitions-1.json" : "https://www.hackingwithswift.com/samples/petitions-2.json"
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Credits", style: .plain, target: self, action: #selector(showCredits))
         
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Filter", style: .plain, target: self, action: #selector(showFilter))
         
-        if let url = URL(string: urlString) {
-            if let data = try? Data(contentsOf: url) {
-                parse(json: data)
-                tableView.reloadData()
+        DispatchQueue.global(qos: .userInitiated).async {
+            [weak self] in
+            if let url = URL(string: urlString) {
+                if let data = try? Data(contentsOf: url) {
+                    self?.parse(json: data)
+                    return
+                }
             }
+            self?.showError()
         }
     }
     
@@ -39,6 +37,16 @@ class ViewController: UITableViewController {
         let decoder = JSONDecoder()
         if let decoded = try? decoder.decode(Petitions.self, from: json) {
             petitions = decoded.results
+            DispatchQueue.main.async { [weak self] in
+                self?.tableView.reloadData()
+            }
+        }
+    }
+    
+    func showError() {
+        DispatchQueue.main.async { [weak self] in
+            let ac = UIAlertController(title: "Something went wrong", message: "Could not load the data", preferredStyle: .alert)
+            self?.present(ac, animated: true)
         }
     }
     
