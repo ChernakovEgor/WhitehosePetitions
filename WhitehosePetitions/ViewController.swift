@@ -57,13 +57,20 @@ class ViewController: UITableViewController {
     }
     
     func filter(containing word: String) {
-        filteredPetitions.removeAll()
-        for petition in petitions {
-            if petition.title.localizedCaseInsensitiveContains(word) || petition.body.localizedCaseInsensitiveContains(word) {
-                filteredPetitions.append(petition)
+        DispatchQueue.global(qos: .userInitiated).async {
+        [weak self] in
+            self?.filteredPetitions.removeAll()
+            if let unfilteredPetitions = self?.petitions {
+                for petition in unfilteredPetitions {
+                if petition.title.localizedCaseInsensitiveContains(word) || petition.body.localizedCaseInsensitiveContains(word) {
+                    self?.filteredPetitions.append(petition)
+                }
             }
         }
-        tableView.reloadData()
+            DispatchQueue.main.async { [weak self] in
+                self?.tableView.reloadData()
+            }
+        }
     }
     
     @objc func showFilter() {
